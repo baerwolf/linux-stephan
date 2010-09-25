@@ -26,7 +26,7 @@
 #include <asm/mtrr.h>
 #include <asm/msr-index.h>
 
-#define KVM_MAX_VCPUS 64
+#define KVM_MAX_VCPUS 128
 #define KVM_MEMORY_SLOTS 32
 /* memory slots that does not exposed to userspace */
 #define KVM_PRIVATE_MEM_SLOTS 4
