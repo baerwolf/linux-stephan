@@ -296,7 +296,7 @@ static DEFINE_SPINLOCK(task_group_lock);
  *  limitation from this.)
  */
 #define MIN_SHARES	(1UL <<  1)
-#define MAX_SHARES	(1UL << 18)
+#define MAX_SHARES	(1UL << 22)
 
 static int root_task_group_load = ROOT_TASK_GROUP_LOAD;
 #endif
@@ -1779,8 +1779,8 @@ static void set_load_weight(struct task_struct *p)
 		return;
 	}
 
-	load->weight = scale_load(prio_to_weight[prio]);
-	load->inv_weight = prio_to_wmult[prio];
+	load->weight = scale_load(prio_to_weight[prio])<<4;
+	load->inv_weight = prio_to_wmult[prio]>>4;
 }
 
 static void enqueue_task(struct rq *rq, struct task_struct *p, int flags)
