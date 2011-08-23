@@ -818,13 +818,13 @@ enum cpu_idle_type {
 # define scale_load_down(w)	(w)
 #endif
 
-#define SCHED_LOAD_SHIFT	(10 + SCHED_LOAD_RESOLUTION)
+#define SCHED_LOAD_SHIFT	(14 + SCHED_LOAD_RESOLUTION)
 #define SCHED_LOAD_SCALE	(1L << SCHED_LOAD_SHIFT)
 
 /*
  * Increase resolution of cpu_power calculations
  */
-#define SCHED_POWER_SHIFT	10
+#define SCHED_POWER_SHIFT	14
 #define SCHED_POWER_SCALE	(1L << SCHED_POWER_SHIFT)
 
 /*
