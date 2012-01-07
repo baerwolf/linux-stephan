@@ -4,6 +4,9 @@
 #include <linux/kvm_host.h>
 #include "kvm_cache_regs.h"
 
+#define emul_to_vcpu(ctxt) \
+	container_of(ctxt, struct kvm_vcpu, arch.emulate_ctxt)
+
 static inline void kvm_clear_exception_queue(struct kvm_vcpu *vcpu)
 {
 	vcpu->arch.exception.pending = false;
