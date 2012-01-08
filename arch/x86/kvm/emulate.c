@@ -1877,6 +1877,82 @@ setup_syscalls_segments(struct x86_emulate_ctxt *ctxt,
 	ss->p = 1;
 }
 
+static bool em_syscall_isenabled(struct x86_emulate_ctxt *ctxt)
+{
+	struct x86_emulate_ops *ops = ctxt->ops;
+	u64 efer = 0;
+
+	/* NO check for lock-prefix here - done in x86_emulate_instruction()*/
+
+	ops->get_msr(ctxt, MSR_EFER, &efer);
+	
+	/* we assume EFER_SCE is unset in REAL and VM86 so with this we     */
+	/* should speedup the #UD case                                      */
+	if ((efer & EFER_SCE) == 0)
+		return false;
+
+	/* syscall should always be enabled in longmode - so only become    */
+	/* vendorspecific (cpuid) if other modes are active...              */
+	if (ctxt->mode != X86EMUL_MODE_PROT64) {
+	  bool vendor;
+	  u32 eax, ebx, ecx, edx;
+
+	  /* syscall is not available in real mode - #UD without cpuid...   */
+	  if ((ctxt->mode == X86EMUL_MODE_REAL) ||
+	      (ctxt->mode == X86EMUL_MODE_VM86))
+		  return false;
+
+	  /* getting the cpu-vendor                                         */
+	  eax = 0x00000000;
+	  ecx = 0x00000000;
+	  if (likely(ops->get_cpuid)) {
+	  	vendor = ops->get_cpuid(ctxt, &eax, &ebx, &ecx, &edx);
+	  }  else vendor = false;
+
+	  if (likely(vendor)) {
+	    
+	    /* Intel ("GenuineIntel")                                       */
+	    /* remark: Intel CPUs only support "syscall" in 64bit longmode  */
+	    /*         Also an 64bit guest with a 32bit compat-app running  */
+	    /*         will #UD !!                                          */
+	    /*         While this behaviour can be fixed (by emulating)     */
+	    /*         into an AMD response - CPUs of AMD can't behave like */
+	    /*         Intel, because without an hardware-raised #UD there  */
+	    /*         is no call in em.-mode (see x86_emulate_instruction) */
+	    if ((ebx==X86EMUL_CPUID_VENDOR_GenuineIntel_ebx) &&
+	        (ecx==X86EMUL_CPUID_VENDOR_GenuineIntel_ecx) &&
+	        (edx==X86EMUL_CPUID_VENDOR_GenuineIntel_edx)) 
+			return false;
+		
+	    /* end "Intel" */
+
+	    
+	    /* AMD ("AuthenticAMD" / "AMDisbetter!")                        */
+	    if (((ebx==X86EMUL_CPUID_VENDOR_AuthenticAMD_ebx) &&
+	         (ecx==X86EMUL_CPUID_VENDOR_AuthenticAMD_ecx) &&
+	         (edx==X86EMUL_CPUID_VENDOR_AuthenticAMD_edx)) ||
+	        ((ebx==X86EMUL_CPUID_VENDOR_AMDisbetterI_ebx) &&
+	         (ecx==X86EMUL_CPUID_VENDOR_AMDisbetterI_ecx) &&
+	         (edx==X86EMUL_CPUID_VENDOR_AMDisbetterI_edx))) {
+
+		goto __em_syscall_enabled_noprotest;
+	    } /* end "AMD" */
+
+	  } /* end vendor is true */
+	  
+	  
+	  /* default:  (not Intel, not AMD ...)                             */
+	  /* this code wasn't able to process vendor                        */
+	  /* so apply  Intels stricter rules...                             */
+	  pr_err_ratelimited("kvm: %i: unknown vcpu vendor - assuming intel\n",
+			      current->tgid);
+	  return false;
+	} /* end "not longmode" */
+
+__em_syscall_enabled_noprotest:
+	return true;
+}
+
 static int em_syscall(struct x86_emulate_ctxt *ctxt)
 {
 	struct x86_emulate_ops *ops = ctxt->ops;
@@ -1885,9 +1961,7 @@ static int em_syscall(struct x86_emulate_ctxt *ctxt)
 	u16 cs_sel, ss_sel;
 	u64 efer = 0;
 
-	/* syscall is not available in real mode */
-	if (ctxt->mode == X86EMUL_MODE_REAL ||
-	    ctxt->mode == X86EMUL_MODE_VM86)
+	if (!(em_syscall_isenabled(ctxt)))
 		return emulate_ud(ctxt);
 
 	ops->get_msr(ctxt, MSR_EFER, &efer);
