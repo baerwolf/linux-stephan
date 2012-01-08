@@ -4675,6 +4675,11 @@ static bool emulator_get_cpuid(struct x86_emulate_ctxt *ctxt,
 	return false;
 }
 
+static int emulator_get_idof_vcpu(struct x86_emulate_ctxt *ctxt)
+{
+	return emul_to_vcpu(ctxt)->vcpu_id;
+}
+
 static struct x86_emulate_ops emulate_ops = {
 	.read_std            = kvm_read_guest_virt_system,
 	.write_std           = kvm_write_guest_virt_system,
@@ -4706,6 +4711,7 @@ static struct x86_emulate_ops emulate_ops = {
 	.put_fpu             = emulator_put_fpu,
 	.intercept           = emulator_intercept,
 	.get_cpuid           = emulator_get_cpuid,
+	.get_idof_vcpu       = emulator_get_idof_vcpu,
 };
 
 static void cache_all_regs(struct kvm_vcpu *vcpu)

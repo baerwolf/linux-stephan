@@ -193,6 +193,9 @@ struct x86_emulate_ops {
 	/* retrieve ctxt's vcpu's cpuid */
 	bool (*get_cpuid)(struct x86_emulate_ctxt *ctxt,
 	                 u32 *eax, u32 *ebx, u32 *ecx, u32 *edx);
+
+	/* retrieve id of vcpu executing this ctxt */
+	int (*get_idof_vcpu)(struct x86_emulate_ctxt *ctxt);
 };
 
 typedef u32 __attribute__((vector_size(16))) sse128_t;
