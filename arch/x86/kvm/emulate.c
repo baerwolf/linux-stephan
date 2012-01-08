@@ -1877,6 +1877,97 @@ setup_syscalls_segments(struct x86_emulate_ctxt *ctxt,
 	ss->p = 1;
 }
 
+static bool em_syscall_isenabled(struct x86_emulate_ctxt *ctxt)
+{
+	struct x86_emulate_ops *ops = ctxt->ops;
+	u64 efer = 0;
+
+	/* syscall is not available in real mode                            */
+	if ((ctxt->mode == X86EMUL_MODE_REAL) ||
+	    (ctxt->mode == X86EMUL_MODE_VM86))
+		return false;
+
+	ops->get_msr(ctxt, MSR_EFER, &efer);
+	/* check - if guestOS is aware of syscall (0x0f05)                  */
+	if ((efer & EFER_SCE) == 0) {
+		return false;
+	} else {
+	  /* ok, at this point it becomes vendor-specific                   */
+	  /* so first get us an cpuid                                       */
+	  bool vendor;
+	  u32 eax, ebx, ecx, edx;
+
+	  /* getting the cpu-vendor                                         */
+	  eax = 0x00000000;
+	  ecx = 0x00000000;
+	  if (likely(ops->get_cpuid))
+	  	vendor = ops->get_cpuid(ctxt, &eax, &ebx, &ecx, &edx);
+	  else	vendor = false;
+
+	  if (likely(vendor)) {
+
+	    /* AMD AuthenticAMD / AMDisbetter!                              */
+	    if (((ebx==X86EMUL_CPUID_VENDOR_AuthenticAMD_ebx) &&
+	         (ecx==X86EMUL_CPUID_VENDOR_AuthenticAMD_ecx) &&
+	         (edx==X86EMUL_CPUID_VENDOR_AuthenticAMD_edx)) ||
+	        ((ebx==X86EMUL_CPUID_VENDOR_AMDisbetter_ebx) &&
+	         (ecx==X86EMUL_CPUID_VENDOR_AMDisbetter_ecx) &&
+	         (edx==X86EMUL_CPUID_VENDOR_AMDisbetter_edx))) {
+
+	          /* if cpu is not in longmode...                           */
+	          /* ...check edx bit11 of cpuid 0x80000001                 */
+	          if (ctxt->mode != X86EMUL_MODE_PROT64) {
+	            eax = 0x80000001;
+	            ecx = 0x00000000;
+	            vendor = ops->get_cpuid(ctxt, &eax, &ebx, &ecx, &edx);
+	            if (likely(vendor)) {
+	              if (unlikely(((edx >> 11) & 0x1) == 0)) {
+	              	return false;
+		      }
+	            } else {
+	            	return false; /* assuming there is no bit 11        */
+		    }
+	          }
+	          goto __em_syscall_enabled_noprotest;
+	    } /* end "AMD" */
+
+
+	    /* Intel (GenuineIntel)                                          */
+	    /* remarks: Intel CPUs only support "syscall" in 64bit longmode  */
+	    /*          Also an 64bit guest within a 32bit compat-app running*/
+	    /*          will #UD !!                                          */
+	    /*          While this behaviour can be fixed (by emulating) into*/
+	    /*          an AMD response - CPUs of AMD can't behave like Intel*/
+	    /*          because without an hardware-raised #UD there is no   */
+	    /*          call in em.-mode (see x86_emulate_instruction(...))! */
+	    /* TODO: make AMD-behaviour configurable                         */
+	    if ((ebx==X86EMUL_CPUID_VENDOR_GenuineIntel_ebx) &&
+	        (ecx==X86EMUL_CPUID_VENDOR_GenuineIntel_ecx) &&
+	        (edx==X86EMUL_CPUID_VENDOR_GenuineIntel_edx)) {
+	          if (ctxt->mode != X86EMUL_MODE_PROT64) {
+	          	return false;
+		  }
+	          goto __em_syscall_enabled_noprotest;
+	    } /* end "Intel" */
+
+	  } /* end vendor is true */
+
+	} /* end MSR_EFER check */
+
+	/* default:	                           */
+	/* this code wasn't able to process vendor */
+	/* so apply  Intels stricter rules...      */
+        pr_err_ratelimited("kvm: %i: cpu%i unknown vendor - assuming intel\n",
+	                    current->tgid, 
+	                    (ops->get_idof_vcpu)?ops->get_idof_vcpu(ctxt):0);
+
+	if (ctxt->mode == X86EMUL_MODE_PROT64) goto __em_syscall_enabled_noprotest;
+	return false;
+
+__em_syscall_enabled_noprotest:
+	return true;
+}
+
 static int em_syscall(struct x86_emulate_ctxt *ctxt)
 {
 	struct x86_emulate_ops *ops = ctxt->ops;
@@ -1885,9 +1976,7 @@ static int em_syscall(struct x86_emulate_ctxt *ctxt)
 	u16 cs_sel, ss_sel;
 	u64 efer = 0;
 
-	/* syscall is not available in real mode */
-	if (ctxt->mode == X86EMUL_MODE_REAL ||
-	    ctxt->mode == X86EMUL_MODE_VM86)
+	if (!(em_syscall_isenabled(ctxt)))
 		return emulate_ud(ctxt);
 
 	ops->get_msr(ctxt, MSR_EFER, &efer);
