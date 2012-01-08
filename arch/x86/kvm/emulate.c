@@ -1871,6 +1871,63 @@ static int em_syscall(struct x86_emulate_ctxt *ctxt)
 		return emulate_ud(ctxt);
 
 	ops->get_msr(ctxt, MSR_EFER, &efer);
+	// check - if guestOS is aware of syscall (0x0f05)
+	if ((efer & EFER_SCE) == 0) return emulate_ud(ctxt);
+	else {
+	  // ok, at this point it becomes vendor-specific
+	  // so first get us an cpuid
+	  struct kvm_cpuid_entry2 *vendor;
+
+	  // eax = 0x00000000, ebx = 0x00000000 ==> cpu-vendor
+	  vendor = kvm_find_cpuid_entry(emul_to_vcpu(ctxt), 0, 0);
+
+	  if (likely(vendor)) {
+	    // AMD (AuthenticAMD)/(AMDisbetter!)
+	    if ((vendor->ebx==X86EMUL_CPUID_VENDOR_AuthenticAMD_ebx &&
+	         vendor->ecx==X86EMUL_CPUID_VENDOR_AuthenticAMD_ecx &&
+	         vendor->edx==X86EMUL_CPUID_VENDOR_AuthenticAMD_edx) ||
+	        (vendor->ebx==X86EMUL_CPUID_VENDOR_AMDisbetter_ebx &&
+	         vendor->ecx==X86EMUL_CPUID_VENDOR_AMDisbetter_ecx &&
+	         vendor->edx==X86EMUL_CPUID_VENDOR_AMDisbetter_edx)) {
+
+	          // if cpu is not in longmode...
+	          // ...check edx bit11 of cpuid 0x80000001
+		  if (ctxt->mode != X86EMUL_MODE_PROT64) {
+	            vendor= kvm_find_cpuid_entry(emul_to_vcpu(ctxt), 0x80000001, 0);
+	            if (likely(vendor)) {
+	             if (unlikely(((vendor->edx >> 11) & 0x1) == 0)) return emulate_ud(ctxt);
+	            } else return emulate_ud(ctxt); // assuming there is no bit 11
+	          }
+	          goto __em_syscall_vendor_processed;
+	    } // end "AMD"
+
+	    // Intel (GenuineIntel)
+	    // remarks: Intel CPUs only support "syscall" in 64bit longmode
+	    //          Also an 64bit guest within an 32bit compat-app running
+	    //          will #UD !!
+	    //          While this behaviour can be fixed (by emulating) into
+	    //          an AMD response - CPUs of AMD can't behave like Intel
+	    //          because without an hardware-raised #UD there is no
+	    //          call into emulation-mode (see x86_emulate_instruction(...)) !
+	    // TODO: make AMD-behaviour configurable
+	    if (vendor->ebx==X86EMUL_CPUID_VENDOR_GenuineIntel_ebx &&
+	        vendor->ecx==X86EMUL_CPUID_VENDOR_GenuineIntel_ecx &&
+	        vendor->edx==X86EMUL_CPUID_VENDOR_GenuineIntel_edx) {
+	          if (ctxt->mode != X86EMUL_MODE_PROT64) return emulate_ud(ctxt);
+	          goto __em_syscall_vendor_processed;
+	    } // end "Intel"
+	  } //end "likely(vendor)"
+
+	  // default:	  
+	  // this code wasn't able to process vendor
+	  // so apply  Intels stricter rules...
+	  pr_unimpl(emul_to_vcpu(ctxt), "unknown vendor of cpu - assuming intel\n");
+	  if (ctxt->mode != X86EMUL_MODE_PROT64) return emulate_ud(ctxt);
+
+	 __em_syscall_vendor_processed:
+	 vendor=NULL;
+	}
+
 	setup_syscalls_segments(ctxt, &cs, &ss);
 
 	ops->get_msr(ctxt, MSR_STAR, &msr_data);
