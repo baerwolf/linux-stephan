@@ -16,7 +16,12 @@ extern int tick_do_timer_cpu __read_mostly;
 
 #ifdef CONFIG_SCHED_NITRO_HZBOOST
 extern ktime_t tick_HZbaseperiod;
-
+#ifdef CONFIG_SCHED_NITRO_HZBOOST_USERSPAC
+extern unsigned int sysctl_tick_period_HZmultiplicator;
+extern int tick_change_periodmultiplicator_handler(struct ctl_table *table, int write,
+					    void __user *buffer, size_t *lenp,
+					    loff_t *ppos);
+#endif
 /*
  * proper locking has to be taken care outside
  */
