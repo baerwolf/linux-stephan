@@ -49,7 +49,15 @@ unsigned int normalized_sysctl_sched_latency = 6000000ULL;
  * SCHED_TUNABLESCALING_LINEAR - scaled linear, *ncpus
  */
 enum sched_tunable_scaling sysctl_sched_tunable_scaling
+#ifdef CONFIG_SCHED_TUNABLESCALING_NONE
+	= SCHED_TUNABLESCALING_NONE;
+#else
+#ifdef CONFIG_SCHED_TUNABLESCALING_LINEAR
+	= SCHED_TUNABLESCALING_LINEAR;
+#else
 	= SCHED_TUNABLESCALING_LOG;
+#endif
+#endif
 
 /*
  * Minimal preemption granularity for CPU-bound tasks:
