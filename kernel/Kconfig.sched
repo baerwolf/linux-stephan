@@ -54,5 +54,93 @@ choice
 endchoice
 
 
+
+config SCHED_NITRO_STANMCNERD
+	bool "Enable Responsiveness Nitro"
+	default n
+	depends on X86_64
+	help
+	  This Option enables an submenu for selecting serveral scheduling-thresholds.
+	  So you can modify the default timeslice or various granularities, which
+	  helps you increasing interactivity.
+	  
+	  WARNING: Modifying the default-values can have a heavy impact on the system-
+	  overhead (i.e. numer of context-switches per second).
+
+menu "Responsiveness Nitro (StanMcNerd)"
+depends on SCHED_NITRO_STANMCNERD
+
+config SCHED_NITRO_LATENCY
+	int "sysctl_sched_latency"
+	range 50000 100000000
+	default 6000000
+	depends on SCHED_NITRO_STANMCNERD
+	help
+	  This is the schedulers latency-intervall. It defines the period until all
+	  runnable tasks of an rq have been scheduled one time. (unit: nanoseconds)
+
+config SCHED_NITRO_MIN_GRANULARITY
+	int "sysctl_sched_min_granularity"
+	range 10000 15000000
+	default 750000
+	depends on SCHED_NITRO_STANMCNERD
+	help
+	  This is the schedulers minimum runtime-granularity. It defines the time
+	  a currently running (and runnable) tasks is guaranteed to run at least
+	  this long. (unit: nanoseconds)
+	  
+	  INFO: This value is normalized with NICE-0. More unimportant tasks
+	  (with higher nice-value) may get a percentual smaller value.
+
+config SCHED_NITRO_WAKEUP_GRANULARITY
+	int "sysctl_sched_wakeup_granularity"
+	range 10000 15000000
+	default 1000000
+	depends on SCHED_NITRO_STANMCNERD
+	help
+	  This is the schedulers wakeup-granularity. It defines the VRUNTIMEdifference
+	  a currently running and a runnable tasks must have, to have the runnable one
+	  preempt the running one. (unit: nanoseconds)
+	  
+	  INFO: This value is normalized with NICE-0. More unimportant tasks
+	  (with higher nice-value) may get a percentual higher value.
+
+config SCHED_NITRO_NR_LATENCY
+	int "sched_nr_latency"
+	range 1 100
+	default 8
+	depends on SCHED_NITRO_STANMCNERD
+	help
+	  Because a normal scheduling round takes "sysctl_sched_latency" ns where each
+	  task runs at least "sysctl_sched_min_granularity" ns, the number of tasks
+	  runnable in such a period is limited.
+	  This value tells the scheduler how much tasks are the limit.
+	  ( floor( sysctl_sched_latency / sysctl_sched_min_granularity) )
+	  
+	  If there are more tasks runnable than "sched_nr_latency", the scheduling-
+	  latency (sysctl_sched_latency) is increased (only for the current period)
+	  by "sysctl_sched_min_granularity" times the number of additional tasks.
+
+config SCHED_NITRO_SHARES_WINDOWS
+	int "sysctl_sched_shares_window"
+	range 1000000 1000000000
+	default 10000000
+	depends on SCHED_NITRO_STANMCNERD
+	help
+	  This is the periodic time the load-balancer is triggered to calculate the
+	  load per cpu and to balance it between all online cpus. (unit: nanoseconds)
+
+config SCHED_NITRO_MIGRATION_COST
+	int "sysctl_sched_migration_cost"
+	range 1000 1000000000
+	default 500000
+	depends on SCHED_NITRO_STANMCNERD
+	help
+	  This is the runtime virtually accounted to a task migrated from one cpu to
+	  another one. Migration is expensive this value says how much. (unit: nanoseconds)
+
+
+endmenu
+
 endmenu
 
