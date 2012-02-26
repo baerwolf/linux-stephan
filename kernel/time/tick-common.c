@@ -32,6 +32,9 @@ DEFINE_PER_CPU(struct tick_device, tick_cpu_device);
  */
 ktime_t tick_next_period;
 ktime_t tick_period;
+#ifdef CONFIG_SCHED_NITRO_HZBOOST
+ktime_t tick_HZbaseperiod;
+#endif
 int tick_do_timer_cpu __read_mostly = TICK_DO_TIMER_BOOT;
 static DEFINE_RAW_SPINLOCK(tick_device_lock);
 
@@ -165,7 +168,12 @@ static void tick_setup_device(struct tick_device *td,
 		if (tick_do_timer_cpu == TICK_DO_TIMER_BOOT) {
 			tick_do_timer_cpu = cpu;
 			tick_next_period = ktime_get();
+#ifdef CONFIG_SCHED_NITRO_HZBOOST
+			tick_HZbaseperiod = ktime_set(0, NSEC_PER_SEC / HZ);
+			tick_change_periodmultiplicator(CONFIG_SCHED_NITRO_HZBOOST_MULTIPLICATOR);
+#else
 			tick_period = ktime_set(0, NSEC_PER_SEC / HZ);
+#endif
 		}
 
 		/*
