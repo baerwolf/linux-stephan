@@ -320,7 +320,11 @@ static DEFINE_SPINLOCK(task_group_lock);
  *  limitation from this.)
  */
 #define MIN_SHARES	(1UL <<  1)
+#ifdef CONFIG_SCHED_NITRO_NICELVLBOOST
+#define MAX_SHARES	(1UL << 22)
+#else
 #define MAX_SHARES	(1UL << 18)
+#endif
 
 static int root_task_group_load = ROOT_TASK_GROUP_LOAD;
 #endif
@@ -1932,8 +1936,13 @@ static void set_load_weight(struct task_struct *p)
 		return;
 	}
 
+#ifdef CONFIG_SCHED_NITRO_NICELVLBOOST
+	load->weight = scale_load(prio_to_weight[prio])<<4;
+	load->inv_weight = prio_to_wmult[prio]>>4;
+#else
 	load->weight = scale_load(prio_to_weight[prio]);
 	load->inv_weight = prio_to_wmult[prio];
+#endif
 }
 
 static void enqueue_task(struct rq *rq, struct task_struct *p, int flags)

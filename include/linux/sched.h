@@ -819,13 +819,21 @@ enum cpu_idle_type {
 # define scale_load_down(w)	(w)
 #endif
 
+#ifdef CONFIG_SCHED_NITRO_NICELVLBOOST
+#define SCHED_LOAD_SHIFT	(14 + SCHED_LOAD_RESOLUTION)
+#else
 #define SCHED_LOAD_SHIFT	(10 + SCHED_LOAD_RESOLUTION)
+#endif
 #define SCHED_LOAD_SCALE	(1L << SCHED_LOAD_SHIFT)
 
 /*
  * Increase resolution of cpu_power calculations
  */
+#ifdef CONFIG_SCHED_NITRO_NICELVLBOOST
+#define SCHED_POWER_SHIFT	14
+#else
 #define SCHED_POWER_SHIFT	10
+#endif
 #define SCHED_POWER_SCALE	(1L << SCHED_POWER_SHIFT)
 
 /*
