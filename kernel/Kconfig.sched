@@ -155,12 +155,26 @@ endmenu
 
 
 
+
+
 config SCHED_NITRO_HZBOOST
 	bool "Enable HZ-frequency Nitro"
 	default n
 	depends on (X86_64 && SCHED_HRTICK)
 	help
 	  This Option activates an open multiplicator for the HZ-frequency.
+
+menu "HZ-frequency Nitro"
+depends on SCHED_NITRO_HZBOOST
+
+config SCHED_NITRO_HZBOOST_USERSPAC
+	bool "Access HZ-Multiplicator via procfs (EXPERIMENTAL)"
+	default n
+	depends on (EXPERIMENTAL && SCHED_NITRO_HZBOOST && X86_64 && SCHED_HRTICK)
+	help
+	  This Option makes the open multiplicator for the HZ-frequency
+	  accessable from userspace via procfs.
+	  The responsible file will be called /proc/sys/kernel/nitro_hzmultiplicator
 
 config SCHED_NITRO_HZBOOST_MULTIPLICATOR
 	int "Multiply the HZ frequency value"
@@ -180,6 +194,9 @@ config SCHED_NITRO_HZBOOST_MULTIPLICATOR
 	  
 	  WARNING: !! THIS OPTION WILL INCREASE YOUR "INTERRUPTS PER SECOND" FOR 
 	              EACH ONLINE CPU. THIS WILL ALSO INCREASE YOUR SYSTEMOVERHEAD !!
+endmenu
+
+
 
 endmenu
 
