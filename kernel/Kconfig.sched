@@ -1,0 +1,58 @@
+#
+# extended Task-Scheduler configuration
+#
+
+menu "Scheduler Nitro (extended) Options"
+
+config SCHED_HRTICK
+	bool "Support for HRTIMER scheduling"
+	default y
+	depends on HIGH_RES_TIMERS && (!SMP || USE_GENERIC_SMP_HELPERS)
+	help
+	  Use High Resolution timers to deliver accurate preemption points.
+	  This Option enables additional schedulercode for scheduling
+	  with dynamic programmable hrtimers. This makes the "ticking"
+	  more dynamic by adding each rq "struct hrtimer hrtick_timer". 
+
+
+choice
+	prompt "Initial schedulers tunable scaling"
+	default SCHED_TUNABLESCALING_LOG
+	help
+	 This option enables you to select a "sysctl_sched_tunable_scaling"
+         from the beginning of booting on.
+         Even it is possible to change (in CONFIG_SCHED_DEBUG) this setting
+         later via the procfs-file "/proc/sys/kernel/sched_tunable_scaling",
+         you then would have to reconfigure all depending values (like
+         sched_latency_ns, sched_min_granularity_ns or sched_wakeup_granularity_ns)
+         because they were change at the start.
+
+         (On large SMPs even the default logarithmical setting will increase
+          values like latency to much, wich would result in low interactivity.)
+
+	config SCHED_TUNABLESCALING_NONE
+		bool "tunable none"
+	help
+	  This option enforces not to make the scheduler tunables a function of the
+          number of CPUs. Settings like "sched_latency_ns" or "sched_wakeup_granularity_ns"
+          are used as they are hardcoded in the kernel.
+
+	config SCHED_TUNABLESCALING_LOG
+		bool "tunable log"
+	help
+	  This option scales the kernel hardcoded scheduler tunables in a logarithmical way.
+          The real for schduling used values are *1+ilog(ncpus).
+
+          This option is the default kernel behaviour.
+
+	config SCHED_TUNABLESCALING_LINEAR
+		bool "tunable linear"
+	help
+	  This option multiplies the kernel hardcoded scheduler times the number of online CPUs.
+          (scaled linear, *ncpus)
+
+endchoice
+
+
+endmenu
+
