@@ -426,3 +426,28 @@ void __init tick_init(void)
 {
 	clockevents_register_notifier(&tick_notifier);
 }
+
+#ifdef CONFIG_SCHED_NITRO_HZBOOST_USERSPAC
+unsigned int sysctl_tick_period_HZmultiplicator	= ((unsigned long)CONFIG_SCHED_NITRO_HZBOOST_MULTIPLICATOR);
+static unsigned int __last_HZmultiplicator	= ((unsigned long)CONFIG_SCHED_NITRO_HZBOOST_MULTIPLICATOR);
+
+int tick_change_periodmultiplicator_handler(struct ctl_table *table, int write,
+					    void __user *buffer, size_t *lenp,
+					    loff_t *ppos)
+{
+	int ret = proc_dointvec_minmax(table, write, buffer, lenp, ppos);
+
+	if (ret || !write)
+		return ret;
+
+	if (sysctl_tick_period_HZmultiplicator > 0)
+	  if (__last_HZmultiplicator != sysctl_tick_period_HZmultiplicator) {
+	    write_seqlock(&xtime_lock);
+	    tick_change_periodmultiplicator(sysctl_tick_period_HZmultiplicator);
+	    __last_HZmultiplicator = sysctl_tick_period_HZmultiplicator;
+	    write_sequnlock(&xtime_lock);
+	  }
+
+	return 0;
+}
+#endif
