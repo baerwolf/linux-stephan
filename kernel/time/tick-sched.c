@@ -40,6 +40,56 @@ struct tick_sched *tick_get_tick_sched(int cpu)
 	return &per_cpu(tick_cpu_sched, cpu);
 }
 
+#ifdef CONFIG_SCHED_NITRO_HZBOOST
+/*
+ * UGLY UGLY CODEDUPLICATION FOR SCHED_NITRO_HZBOOST
+ * 
+ * Must be called with interrupts disabled !
+ * 
+ * UGLY UGLY CODEDUPLICATION FOR SCHED_NITRO_HZBOOST
+ * (...but better fast than clean!)
+ * 
+ * TODO: maybe "tick_next_period" needs separate updates now?
+ */
+static void tick_do_update_jiffies64(ktime_t now)
+{
+	unsigned long ticks = 0;
+	ktime_t delta;
+
+	/*
+	 * Do a quick check without holding xtime_lock:
+	 */
+	delta = ktime_sub(now, last_jiffies_update);
+	if (delta.tv64 < tick_HZbaseperiod.tv64)
+		return;
+
+	/* Reevalute with xtime_lock held */
+	write_seqlock(&xtime_lock);
+
+	delta = ktime_sub(now, last_jiffies_update);
+	if (delta.tv64 >= tick_HZbaseperiod.tv64) {
+
+		delta = ktime_sub(delta, tick_HZbaseperiod);
+		last_jiffies_update = ktime_add(last_jiffies_update,
+						tick_HZbaseperiod);
+
+		/* Slow path for long timeouts */
+		if (unlikely(delta.tv64 >= tick_HZbaseperiod.tv64)) {
+			s64 incr = ktime_to_ns(tick_HZbaseperiod);
+
+			ticks = ktime_divns(delta, incr);
+
+			last_jiffies_update = ktime_add_ns(last_jiffies_update,
+							   incr * ticks);
+		}
+		do_timer(++ticks);
+
+		/* Keep the tick_next_period variable up to date */
+		tick_next_period = ktime_add(last_jiffies_update, tick_HZbaseperiod);
+	}
+	write_sequnlock(&xtime_lock);
+}
+#else
 /*
  * Must be called with interrupts disabled !
  */
@@ -81,6 +131,7 @@ static void tick_do_update_jiffies64(ktime_t now)
 	}
 	write_sequnlock(&xtime_lock);
 }
+#endif
 
 /*
  * Initialize and return retrieve the jiffies update.
