@@ -176,23 +176,24 @@ config SCHED_NITRO_HZBOOST_USERSPAC
 	  accessable from userspace via procfs.
 	  The responsible file will be called /proc/sys/kernel/nitro_hzmultiplicator
 
-config SCHED_NITRO_HZBOOST_MULTIPLICATOR
-	int "Multiply the HZ frequency value"
-	range 1 100
-	default 1
+config SCHED_NITRO_HZBOOST_PERMILLE
+	int "Skale the HZ frequency value (per mille)"
+	range 1 100000
+	default 1000
 	depends on (SCHED_NITRO_HZBOOST && X86_64 && SCHED_HRTICK)
 	help
 	  Normally the scheduler code (scheduler_tick()) ticks with "HZ" frequency.
 	  With this frequency also "jiffies_64" is increased and is used by
 	  timerelated kernelcode.
-	  This Option increases the schedulers tickerfrequency by multiplying
-	  this multiplicator with HZ. However the jiffies_64 is STILL updated
-	  with HZ-frequency and all the jiffy-based timecode is working further on.
+	  This Option skales the schedulers tickerfrequency by multiplying
+	  this per-mille value with HZ (and divides everything by 1000).
+	  However the jiffies_64 is STILL updated with HZ-frequency and all the
+	  jiffy-based timecode is working further on.
 	  
 	  Asyncron ns-time-based code will take advantage from this option and
 	  scheduling will become finer and more interactive.
 	  
-	  WARNING: !! THIS OPTION WILL INCREASE YOUR "INTERRUPTS PER SECOND" FOR 
+	  WARNING: !! THIS OPTION MAY INCREASE YOUR "INTERRUPTS PER SECOND" FOR 
 	              EACH ONLINE CPU. THIS WILL ALSO INCREASE YOUR SYSTEMOVERHEAD !!
 endmenu
 
