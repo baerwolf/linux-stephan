@@ -253,8 +253,8 @@ static struct ctl_table root_table[] = {
 
 #ifdef CONFIG_SCHED_NITRO_HZBOOST_USERSPAC
 #include "time/tick-internal.h"
-static int min_tick_period_HZmultiplicator = 1;
-static int max_tick_period_HZmultiplicator = 100;
+static int min_tick_period_HZscalepermille = 1;
+static int max_tick_period_HZscalepermille = 100000;
 #endif
 #ifdef CONFIG_SCHED_DEBUG
 static int min_sched_granularity_ns = 100000;		/* 100 usecs */
@@ -280,13 +280,13 @@ static struct ctl_table kern_table[] = {
 	},
 #ifdef CONFIG_SCHED_NITRO_HZBOOST_USERSPAC
 	{
-		.procname	= "nitro_hzmultiplicator",
-		.data		= &sysctl_tick_period_HZmultiplicator,
+		.procname	= "nitro_hz_permille",
+		.data		= &sysctl_tick_period_HZscalepermille,
 		.maxlen		= sizeof(unsigned int),
 		.mode		= 0644,
 		.proc_handler	= tick_change_periodmultiplicator_handler,
-		.extra1		= &min_tick_period_HZmultiplicator,
-		.extra2		= &max_tick_period_HZmultiplicator,
+		.extra1		= &min_tick_period_HZscalepermille,
+		.extra2		= &max_tick_period_HZscalepermille,
 	},
 #endif
 #ifdef CONFIG_SCHED_DEBUG
