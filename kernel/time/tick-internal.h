@@ -17,19 +17,28 @@ extern int tick_do_timer_cpu __read_mostly;
 #ifdef CONFIG_SCHED_NITRO_HZBOOST
 extern ktime_t tick_HZbaseperiod;
 #ifdef CONFIG_SCHED_NITRO_HZBOOST_USERSPAC
-extern unsigned int sysctl_tick_period_HZmultiplicator;
+extern unsigned int sysctl_tick_period_HZscalepermille;
 extern int tick_change_periodmultiplicator_handler(struct ctl_table *table, int write,
 					    void __user *buffer, size_t *lenp,
 					    loff_t *ppos);
 #endif
 /*
  * proper locking has to be taken care outside
+ * 
+ * scalepermille better be not zero!
+ * 
  */
-static inline void tick_change_periodmultiplicator(const unsigned long long multiplicator)
+static inline void tick_change_periodmultiplicator(const unsigned long long scalepermille)
 {
-  printk( KERN_NOTICE "changing nitro hzboost multiplicator, new frequency: %llu x %lluHz\n", multiplicator, (unsigned long long)HZ);
-  tick_period = ktime_set(0, NSEC_PER_SEC / (HZ*multiplicator));
-  printk( KERN_NOTICE "scheduler nitro-patchset v1.0 Ilmenau 2012, by Stephan Baerwolf <stephan.baerwolf@tu-ilmenau.de>\n");
+  unsigned long long __nanoseconds = (((unsigned long long)NSEC_PER_SEC) * 1000ULL) / scalepermille;
+  unsigned int i,j;
+  
+  i = scalepermille / 1000;
+  j = scalepermille % 1000;
+  
+  printk( KERN_NOTICE "changing nitro hzboost multiplicator, new frequency: %u.%03u x %lluHz\n", i, j, (unsigned long long)HZ);
+  tick_period = ktime_set(0, __nanoseconds / ((unsigned long long)HZ));
+  printk( KERN_NOTICE "scheduler nitro-patchset v1.0.1 Ilmenau 2012, by Stephan Baerwolf <stephan.baerwolf@tu-ilmenau.de>\n");
 } 
 #endif
 
