@@ -170,7 +170,7 @@ static void tick_setup_device(struct tick_device *td,
 			tick_next_period = ktime_get();
 #ifdef CONFIG_SCHED_NITRO_HZBOOST
 			tick_HZbaseperiod = ktime_set(0, NSEC_PER_SEC / HZ);
-			tick_change_periodmultiplicator(CONFIG_SCHED_NITRO_HZBOOST_MULTIPLICATOR);
+			tick_change_periodmultiplicator(CONFIG_SCHED_NITRO_HZBOOST_PERMILLE);
 #else
 			tick_period = ktime_set(0, NSEC_PER_SEC / HZ);
 #endif
@@ -428,8 +428,8 @@ void __init tick_init(void)
 }
 
 #ifdef CONFIG_SCHED_NITRO_HZBOOST_USERSPAC
-unsigned int sysctl_tick_period_HZmultiplicator	= ((unsigned long)CONFIG_SCHED_NITRO_HZBOOST_MULTIPLICATOR);
-static unsigned int __last_HZmultiplicator	= ((unsigned long)CONFIG_SCHED_NITRO_HZBOOST_MULTIPLICATOR);
+unsigned int sysctl_tick_period_HZscalepermille	= ((unsigned long)CONFIG_SCHED_NITRO_HZBOOST_PERMILLE);
+static unsigned int __last_HZscalepermille	= ((unsigned long)CONFIG_SCHED_NITRO_HZBOOST_PERMILLE);
 
 int tick_change_periodmultiplicator_handler(struct ctl_table *table, int write,
 					    void __user *buffer, size_t *lenp,
@@ -440,11 +440,11 @@ int tick_change_periodmultiplicator_handler(struct ctl_table *table, int write,
 	if (ret || !write)
 		return ret;
 
-	if (sysctl_tick_period_HZmultiplicator > 0)
-	  if (__last_HZmultiplicator != sysctl_tick_period_HZmultiplicator) {
+	if (sysctl_tick_period_HZscalepermille > 0)
+	  if (__last_HZscalepermille != sysctl_tick_period_HZscalepermille) {
 	    write_seqlock(&xtime_lock);
-	    tick_change_periodmultiplicator(sysctl_tick_period_HZmultiplicator);
-	    __last_HZmultiplicator = sysctl_tick_period_HZmultiplicator;
+	    tick_change_periodmultiplicator(sysctl_tick_period_HZscalepermille);
+	    __last_HZscalepermille = sysctl_tick_period_HZscalepermille;
 	    write_sequnlock(&xtime_lock);
 	  }
 
