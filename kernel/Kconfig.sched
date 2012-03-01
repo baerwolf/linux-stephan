@@ -82,7 +82,7 @@ depends on SCHED_NITRO_STANMCNERD
 
 config SCHED_NITRO_LATENCY
 	int "sysctl_sched_latency"
-	range 50000 100000000
+	range 1 1999999999
 	default 6000000
 	depends on SCHED_NITRO_STANMCNERD
 	help
@@ -91,7 +91,7 @@ config SCHED_NITRO_LATENCY
 
 config SCHED_NITRO_MIN_GRANULARITY
 	int "sysctl_sched_min_granularity"
-	range 10000 15000000
+	range 0 15000000
 	default 750000
 	depends on SCHED_NITRO_STANMCNERD
 	help
@@ -104,7 +104,7 @@ config SCHED_NITRO_MIN_GRANULARITY
 
 config SCHED_NITRO_WAKEUP_GRANULARITY
 	int "sysctl_sched_wakeup_granularity"
-	range 10000 15000000
+	range 0 15000000
 	default 1000000
 	depends on SCHED_NITRO_STANMCNERD
 	help
@@ -117,7 +117,7 @@ config SCHED_NITRO_WAKEUP_GRANULARITY
 
 config SCHED_NITRO_NR_LATENCY
 	int "sched_nr_latency"
-	range 1 100
+	range 1 999999999
 	default 8
 	depends on SCHED_NITRO_STANMCNERD
 	help
@@ -142,7 +142,7 @@ config SCHED_NITRO_SHARES_WINDOWS
 
 config SCHED_NITRO_MIGRATION_COST
 	int "sysctl_sched_migration_cost"
-	range 1000 1000000000
+	range -1 1999999999
 	default 500000
 	depends on SCHED_NITRO_STANMCNERD
 	help
@@ -174,7 +174,7 @@ config SCHED_NITRO_HZBOOST_USERSPAC
 	help
 	  This Option makes the open multiplicator for the HZ-frequency
 	  accessable from userspace via procfs.
-	  The responsible file will be called /proc/sys/kernel/nitro_hzmultiplicator
+	  The responsible file will be called /proc/sys/kernel/nitro_hz_permille
 
 config SCHED_NITRO_HZBOOST_PERMILLE
 	int "Skale the HZ frequency value (per mille)"
