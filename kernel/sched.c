@@ -2409,6 +2409,10 @@ struct migration_arg {
 
 static int migration_cpu_stop(void *data);
 
+
+#ifdef CONFIG_SCHED_NITRO_HZBOOST
+#include "time/tick-internal.h"
+#endif
 /*
  * wait_task_inactive - wait for a thread to unschedule.
  *
@@ -2499,7 +2503,11 @@ unsigned long wait_task_inactive(struct task_struct *p, long match_state)
 		 * yield - it could be a while.
 		 */
 		if (unlikely(on_rq)) {
+#ifdef CONFIG_SCHED_NITRO_HZBOOST
+			ktime_t to = ktime_add_ns(tick_period, 0);
+#else
 			ktime_t to = ktime_set(0, NSEC_PER_SEC/HZ);
+#endif
 
 			set_current_state(TASK_UNINTERRUPTIBLE);
 			schedule_hrtimeout(&to, HRTIMER_MODE_REL);
