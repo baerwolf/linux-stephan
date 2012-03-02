@@ -442,10 +442,10 @@ int tick_change_periodmultiplicator_handler(struct ctl_table *table, int write,
 
 	if (sysctl_tick_period_HZscalepermille > 0)
 	  if (__last_HZscalepermille != sysctl_tick_period_HZscalepermille) {
-	    write_seqlock(&xtime_lock);
+// 	    write_seqlock(&xtime_lock);
 	    tick_change_periodmultiplicator(sysctl_tick_period_HZscalepermille);
 	    __last_HZscalepermille = sysctl_tick_period_HZscalepermille;
-	    write_sequnlock(&xtime_lock);
+// 	    write_sequnlock(&xtime_lock);
 	  }
 
 	return 0;
