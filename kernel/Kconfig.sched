@@ -68,10 +68,9 @@ config SCHED_NITRO_NICELVLBOOST
 	default n
 	depends on X86_64
 	help
-	  This Option dereases priority of idletasks, by increasing all normal nicelevel
-	  weights by factor 16. So instead of 20%, an idle task will now only get ca. 1%
-	  while competing for cpu with a nice-19 task.
-
+	  This Option dereases priority of idletasks.
+	  If an idle-tasks starts running, its cpu-time is not accounted via weigth 3, anymore.
+	  Instead it gets a time larger than the largest enqueued task.
 
 
 config SCHED_NITRO_STANMCNERD
