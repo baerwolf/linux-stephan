@@ -823,21 +823,13 @@ enum cpu_idle_type {
 # define scale_load_down(w)	(w)
 #endif
 
-#ifdef CONFIG_SCHED_NITRO_NICELVLBOOST
-#define SCHED_LOAD_SHIFT	(14 + SCHED_LOAD_RESOLUTION)
-#else
 #define SCHED_LOAD_SHIFT	(10 + SCHED_LOAD_RESOLUTION)
-#endif
 #define SCHED_LOAD_SCALE	(1L << SCHED_LOAD_SHIFT)
 
 /*
  * Increase resolution of cpu_power calculations
  */
-#ifdef CONFIG_SCHED_NITRO_NICELVLBOOST
-#define SCHED_POWER_SHIFT	14
-#else
 #define SCHED_POWER_SHIFT	10
-#endif
 #define SCHED_POWER_SCALE	(1L << SCHED_POWER_SHIFT)
 
 /*
@@ -2007,6 +1999,9 @@ extern void wake_up_idle_cpu(int cpu);
 static inline void wake_up_idle_cpu(int cpu) { }
 #endif
 
+#ifdef CONFIG_SCHED_NITRO_CPUGUARANTY
+extern unsigned int sysctl_sched_cpuguarantytime;
+#endif
 extern unsigned int sysctl_sched_latency;
 extern unsigned int sysctl_sched_min_granularity;
 extern unsigned int sysctl_sched_wakeup_granularity;
