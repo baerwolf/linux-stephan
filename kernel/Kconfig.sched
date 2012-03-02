@@ -54,6 +54,15 @@ choice
 endchoice
 
 
+config SCHED_NITRO_CPUGUARANTY
+	bool "Enable Runtime-guaranty Nitro"
+	default n
+	help
+	  This Option guaranties a (SCHED_NORMAL) cpu-bound task a minimum of time (in nanoseconds),
+	  it will keep running.
+	  It also introduces a new scheduler-tuneable: sched_cpuguarantytime
+
+
 config SCHED_NITRO_NICELVLBOOST
 	bool "Enable Nicelevel Nitro"
 	default n
@@ -88,6 +97,16 @@ config SCHED_NITRO_LATENCY
 	help
 	  This is the schedulers latency-intervall. It defines the period until all
 	  runnable tasks of an rq have been scheduled one time. (unit: nanoseconds)
+
+config SCHED_NITRO_CPUGUARANTYTIME
+	int "sysctl_sched_cpuguarantytime"
+	range 0 15000000
+	default 0
+	depends on (SCHED_NITRO_STANMCNERD && SCHED_NITRO_CPUGUARANTY)
+	help
+	  This is the schedulers minimum runtime-guaranty. It defines the time
+	  a currently running (and runnable) tasks is guaranteed to stay at least
+	  this long in cpu. (unit: nanoseconds)
 
 config SCHED_NITRO_MIN_GRANULARITY
 	int "sysctl_sched_min_granularity"
