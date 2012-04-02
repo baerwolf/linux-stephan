@@ -10,6 +10,7 @@ SCHED_FEAT(GENTLE_FAIR_SLEEPERS, 1)
  * tasks
  */
 SCHED_FEAT(START_DEBIT, 1)
+SCHED_FEAT(RESUME_DEBIT, 0)
 
 /*
  * Based on load and program behaviour, see if it makes sense to place
@@ -31,7 +32,7 @@ SCHED_FEAT(NEXT_BUDDY, 0)
  * wake-preempt) as that likely will touch the same data, increases
  * cache locality.
  */
-SCHED_FEAT(LAST_BUDDY, 1)
+SCHED_FEAT(LAST_BUDDY, 0)
 
 /*
  * Consider buddies to be cache hot, decreases the likelyness of a
