@@ -1872,6 +1872,9 @@ dequeue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int flags)
 	update_cfs_shares(cfs_rq);
 }
 
+static int
+wakeup_preempt_entity(struct sched_entity *curr, struct sched_entity *se);
+
 /*
  * Preempt the current task with a newly woken task if needed:
  */
@@ -1880,7 +1883,6 @@ check_preempt_tick(struct cfs_rq *cfs_rq, struct sched_entity *curr)
 {
 	unsigned long ideal_runtime, delta_exec;
 	struct sched_entity *se;
-	s64 delta;
 
 	ideal_runtime = sched_slice(cfs_rq, curr);
 	delta_exec = curr->sum_exec_runtime - curr->prev_sum_exec_runtime;
@@ -1903,12 +1905,7 @@ check_preempt_tick(struct cfs_rq *cfs_rq, struct sched_entity *curr)
 		return;
 
 	se = __pick_first_entity(cfs_rq);
-	delta = curr->vruntime - se->vruntime;
-
-	if (delta < 0)
-		return;
-
-	if (delta > ideal_runtime)
+	if (wakeup_preempt_entity(curr, se) > 0)
 		resched_task(rq_of(cfs_rq)->curr);
 }
 
@@ -1941,9 +1938,6 @@ set_next_entity(struct cfs_rq *cfs_rq, struct sched_entity *se)
 #endif
 	se->prev_sum_exec_runtime = se->sum_exec_runtime;
 }
-
-static int
-wakeup_preempt_entity(struct sched_entity *curr, struct sched_entity *se);
 
 /*
  * Pick the next process, keeping these things in mind, in this order:
