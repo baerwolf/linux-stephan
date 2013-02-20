@@ -64,6 +64,16 @@
   #define	CONFIG_SCHED_NITRO_SHARES_WINDOWS 10000000UL
 #endif
 
+#ifdef CONFIG_SCHED_NITRO_CPUGUARANTY
+
+#if ((!defined(CONFIG_SCHED_NITRO_CPUGUARANTYTIME)) || (!defined(CONFIG_SCHED_NITRO_STANMCNERD)))
+  #undef	CONFIG_SCHED_NITRO_CPUGUARANTYTIME
+  #define	CONFIG_SCHED_NITRO_CPUGUARANTYTIME 0UL
+#endif
+
+unsigned int sysctl_sched_cpuguarantytime = ((unsigned long long)CONFIG_SCHED_NITRO_CPUGUARANTYTIME);
+#endif
+
 /*
  * Targeted preemption latency for CPU-bound tasks:
  * (default: 6ms * (1 + ilog(ncpus)), units: nanoseconds)
@@ -1902,8 +1912,14 @@ check_preempt_tick(struct cfs_rq *cfs_rq, struct sched_entity *curr)
 	unsigned long ideal_runtime, delta_exec;
 	struct sched_entity *se;
 
-	ideal_runtime = sched_slice(cfs_rq, curr);
 	delta_exec = curr->sum_exec_runtime - curr->prev_sum_exec_runtime;
+	
+#ifdef CONFIG_SCHED_NITRO_CPUGUARANTY
+	if (delta_exec < sysctl_sched_cpuguarantytime)
+	  return;
+#endif
+
+	ideal_runtime = sched_slice(cfs_rq, curr);
 	if (delta_exec > ideal_runtime) {
 		resched_task(rq_of(cfs_rq)->curr);
 		/*
