@@ -589,7 +589,7 @@ static struct sched_entity *__pick_next_entity(struct sched_entity *se)
 	return rb_entry(next, struct sched_entity, run_node);
 }
 
-#ifdef CONFIG_SCHED_DEBUG
+#if (defined(CONFIG_SCHED_NITRO_NICELVLBOOST) || defined(CONFIG_SCHED_DEBUG))
 struct sched_entity *__pick_last_entity(struct cfs_rq *cfs_rq)
 {
 	struct rb_node *last = rb_last(&cfs_rq->tasks_timeline);
@@ -599,7 +599,9 @@ struct sched_entity *__pick_last_entity(struct cfs_rq *cfs_rq)
 
 	return rb_entry(last, struct sched_entity, run_node);
 }
+#endif
 
+#ifdef CONFIG_SCHED_DEBUG
 /**************************************************************
  * Scheduling class statistics methods:
  */
@@ -699,6 +701,9 @@ static u64 sched_vslice(struct cfs_rq *cfs_rq, struct sched_entity *se)
 	return calc_delta_fair(sched_slice(cfs_rq, se), se);
 }
 
+static unsigned long
+wakeup_gran(struct sched_entity *curr, struct sched_entity *se);
+
 /*
  * Update the current task's runtime statistics. Skip current tasks that
  * are not in our scheduling class.
@@ -716,7 +721,42 @@ __update_curr(struct cfs_rq *cfs_rq, struct sched_entity *curr,
 	schedstat_add(cfs_rq, exec_clock, delta_exec);
 	delta_exec_weighted = calc_delta_fair(delta_exec, curr);
 
+#ifdef CONFIG_SCHED_NITRO_NICELVLBOOST
+	/* is curr a task - if so it could be an idle task...        */
+	if (entity_is_task(curr)) {
+	    struct task_struct *curtask = task_of(curr);
+
+	    if (curtask->policy == SCHED_IDLE) {
+		s64 vdiff;
+		u64 vrunt;
+		u64 vincreasewindow = 0ULL;
+	      	struct sched_entity *se = __pick_last_entity(cfs_rq);
+
+		vincreasewindow--;
+		vincreasewindow>>=9ULL;
+
+		if (se) {
+		  vdiff = curr->vruntime - se->vruntime;
+		  if (vdiff < 0)  
+		    curr->vruntime = se->vruntime + 1ULL;
+
+		  vrunt  = curr->vruntime;
+		  vrunt += (delta_exec_weighted + wakeup_gran(se, curr)) << 2ULL;
+		  vdiff  = vrunt - cfs_rq->min_vruntime;
+		  if (vdiff < vincreasewindow)
+		    curr->vruntime=vrunt;
+
+		  goto __update_curr_increased;
+		}
+	    }
+
+	}
+#endif
 	curr->vruntime += delta_exec_weighted;
+
+#ifdef CONFIG_SCHED_NITRO_NICELVLBOOST
+__update_curr_increased:
+#endif
 	update_min_vruntime(cfs_rq);
 }
 
