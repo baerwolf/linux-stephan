@@ -1,0 +1,221 @@
+#
+# extended Task-Scheduler configuration
+#
+
+menu "Scheduler Nitro (extended) Options"
+
+config SCHED_HRTICK
+	bool "Support for HRTIMER scheduling"
+	default y
+	depends on HIGH_RES_TIMERS && (!SMP || USE_GENERIC_SMP_HELPERS)
+	help
+	  Use High Resolution timers to deliver accurate preemption points.
+	  This Option enables additional schedulercode for scheduling
+	  with dynamic programmable hrtimers. This makes the "ticking"
+	  more dynamic by adding each rq "struct hrtimer hrtick_timer". 
+
+
+choice
+	prompt "Initial schedulers tunable scaling"
+	default SCHED_TUNABLESCALING_LOG
+	help
+	 This option enables you to select a "sysctl_sched_tunable_scaling"
+         from the beginning of booting on.
+         Even it is possible to change (in CONFIG_SCHED_DEBUG) this setting
+         later via the procfs-file "/proc/sys/kernel/sched_tunable_scaling",
+         you then would have to reconfigure all depending values (like
+         sched_latency_ns, sched_min_granularity_ns or sched_wakeup_granularity_ns)
+         because they were change at the start.
+
+         (On large SMPs even the default logarithmical setting will increase
+          values like latency to much, wich would result in low interactivity.)
+
+	config SCHED_TUNABLESCALING_NONE
+		bool "tunable none"
+	help
+	  This option enforces not to make the scheduler tunables a function of the
+          number of CPUs. Settings like "sched_latency_ns" or "sched_wakeup_granularity_ns"
+          are used as they are hardcoded in the kernel.
+
+	config SCHED_TUNABLESCALING_LOG
+		bool "tunable log"
+	help
+	  This option scales the kernel hardcoded scheduler tunables in a logarithmical way.
+          The real for schduling used values are *1+ilog(ncpus).
+
+          This option is the default kernel behaviour.
+
+	config SCHED_TUNABLESCALING_LINEAR
+		bool "tunable linear"
+	help
+	  This option multiplies the kernel hardcoded scheduler times the number of online CPUs.
+          (scaled linear, *ncpus)
+
+endchoice
+
+
+config SCHED_NITRO_CPUGUARANTY
+	bool "Enable Runtime-guaranty Nitro"
+	default n
+	help
+	  This Option guaranties a (SCHED_NORMAL) cpu-bound task a minimum of time (in nanoseconds),
+	  it will keep running.
+	  It also introduces a new scheduler-tuneable: sched_cpuguarantytime
+
+
+config SCHED_NITRO_NICELVLBOOST
+	bool "Enable Nicelevel Nitro"
+	default n
+	depends on X86_64
+	help
+	  This Option dereases priority of idletasks.
+	  If an idle-tasks starts running, its cpu-time is not accounted via weigth 3, anymore.
+	  Instead it gets a time larger than the largest enqueued task.
+
+
+config SCHED_NITRO_STANMCNERD
+	bool "Enable Responsiveness Nitro"
+	default n
+	depends on X86_64
+	help
+	  This Option enables an submenu for selecting serveral scheduling-thresholds.
+	  So you can modify the default timeslice or various granularities, which
+	  helps you increasing interactivity.
+	  
+	  WARNING: Modifying the default-values can have a heavy impact on the system-
+	  overhead (i.e. numer of context-switches per second).
+
+menu "Responsiveness Nitro (StanMcNerd)"
+depends on SCHED_NITRO_STANMCNERD
+
+config SCHED_NITRO_LATENCY
+	int "sysctl_sched_latency"
+	range 1 1999999999
+	default 6000000
+	depends on SCHED_NITRO_STANMCNERD
+	help
+	  This is the schedulers latency-intervall. It defines the period until all
+	  runnable tasks of an rq have been scheduled one time. (unit: nanoseconds)
+
+config SCHED_NITRO_CPUGUARANTYTIME
+	int "sysctl_sched_cpuguarantytime"
+	range 0 15000000
+	default 0
+	depends on (SCHED_NITRO_STANMCNERD && SCHED_NITRO_CPUGUARANTY)
+	help
+	  This is the schedulers minimum runtime-guaranty. It defines the time
+	  a currently running (and runnable) tasks is guaranteed to stay at least
+	  this long in cpu. (unit: nanoseconds)
+
+config SCHED_NITRO_MIN_GRANULARITY
+	int "sysctl_sched_min_granularity"
+	range 0 15000000
+	default 750000
+	depends on SCHED_NITRO_STANMCNERD
+	help
+	  This is the schedulers minimum runtime-granularity. It defines the time
+	  a currently running (and runnable) tasks is guaranteed to run at least
+	  this long. (unit: nanoseconds)
+	  
+	  INFO: This value is normalized with NICE-0. More unimportant tasks
+	  (with higher nice-value) may get a percentual smaller value.
+
+config SCHED_NITRO_WAKEUP_GRANULARITY
+	int "sysctl_sched_wakeup_granularity"
+	range 0 15000000
+	default 1000000
+	depends on SCHED_NITRO_STANMCNERD
+	help
+	  This is the schedulers wakeup-granularity. It defines the VRUNTIMEdifference
+	  a currently running and a runnable tasks must have, to have the runnable one
+	  preempt the running one. (unit: nanoseconds)
+	  
+	  INFO: This value is normalized with NICE-0. More unimportant tasks
+	  (with higher nice-value) may get a percentual higher value.
+
+config SCHED_NITRO_NR_LATENCY
+	int "sched_nr_latency"
+	range 1 999999999
+	default 8
+	depends on SCHED_NITRO_STANMCNERD
+	help
+	  Because a normal scheduling round takes "sysctl_sched_latency" ns where each
+	  task runs at least "sysctl_sched_min_granularity" ns, the number of tasks
+	  runnable in such a period is limited.
+	  This value tells the scheduler how much tasks are the limit.
+	  ( floor( sysctl_sched_latency / sysctl_sched_min_granularity) )
+	  
+	  If there are more tasks runnable than "sched_nr_latency", the scheduling-
+	  latency (sysctl_sched_latency) is increased (only for the current period)
+	  by "sysctl_sched_min_granularity" times the number of additional tasks.
+
+config SCHED_NITRO_SHARES_WINDOWS
+	int "sysctl_sched_shares_window"
+	range 1000000 1000000000
+	default 10000000
+	depends on SCHED_NITRO_STANMCNERD
+	help
+	  This is the periodic time the load-balancer is triggered to calculate the
+	  load per cpu and to balance it between all online cpus. (unit: nanoseconds)
+
+config SCHED_NITRO_MIGRATION_COST
+	int "sysctl_sched_migration_cost"
+	range -1 1999999999
+	default 500000
+	depends on SCHED_NITRO_STANMCNERD
+	help
+	  This is the runtime virtually accounted to a task migrated from one cpu to
+	  another one. Migration is expensive this value says how much. (unit: nanoseconds)
+
+
+endmenu
+
+
+
+
+
+
+config SCHED_NITRO_HZBOOST
+	bool "Enable HZ-frequency Nitro"
+	default n
+	depends on (X86_64 && SCHED_HRTICK)
+	help
+	  This Option activates an open multiplicator for the HZ-frequency.
+
+menu "HZ-frequency Nitro"
+depends on SCHED_NITRO_HZBOOST
+
+config SCHED_NITRO_HZBOOST_USERSPAC
+	bool "Access HZ-Multiplicator via procfs"
+	default n
+	depends on (SCHED_NITRO_HZBOOST && X86_64 && SCHED_HRTICK)
+	help
+	  This Option makes the open multiplicator for the HZ-frequency
+	  accessable from userspace via procfs.
+	  The responsible file will be called /proc/sys/kernel/nitro_hz_permille
+
+config SCHED_NITRO_HZBOOST_PERMILLE
+	int "Skale the HZ frequency value (per mille)"
+	range 1 100000
+	default 1000
+	depends on (SCHED_NITRO_HZBOOST && X86_64 && SCHED_HRTICK)
+	help
+	  Normally the scheduler code (scheduler_tick()) ticks with "HZ" frequency.
+	  With this frequency also "jiffies_64" is increased and is used by
+	  timerelated kernelcode.
+	  This Option skales the schedulers tickerfrequency by multiplying
+	  this per-mille value with HZ (and divides everything by 1000).
+	  However the jiffies_64 is STILL updated with HZ-frequency and all the
+	  jiffy-based timecode is working further on.
+	  
+	  Asyncron ns-time-based code will take advantage from this option and
+	  scheduling will become finer and more interactive.
+	  
+	  WARNING: !! THIS OPTION MAY INCREASE YOUR "INTERRUPTS PER SECOND" FOR 
+	              EACH ONLINE CPU. THIS WILL ALSO INCREASE YOUR SYSTEMOVERHEAD !!
+endmenu
+
+
+
+endmenu
+
