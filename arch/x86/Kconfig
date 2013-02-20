@@ -258,6 +258,9 @@ source "kernel/Kconfig.freezer"
 
 menu "Processor type and features"
 
+source kernel/Kconfig.hz
+source kernel/Kconfig.sched
+
 config ZONE_DMA
 	bool "DMA memory allocation support" if EXPERT
 	default y
@@ -1597,8 +1600,6 @@ config CC_STACKPROTECTOR
 	  gcc with the feature backported. Older versions are automatically
 	  detected and for those versions, this configuration option is
 	  ignored. (and a warning is printed during bootup)
-
-source kernel/Kconfig.hz
 
 config KEXEC
 	bool "kexec system call"
