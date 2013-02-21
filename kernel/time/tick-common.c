@@ -33,6 +33,9 @@ DEFINE_PER_CPU(struct tick_device, tick_cpu_device);
  */
 ktime_t tick_next_period;
 ktime_t tick_period;
+#ifdef CONFIG_SCHED_NITRO_HZBOOST
+ktime_t tick_HZbaseperiod;
+#endif
 int tick_do_timer_cpu __read_mostly = TICK_DO_TIMER_BOOT;
 static DEFINE_RAW_SPINLOCK(tick_device_lock);
 
@@ -169,7 +172,12 @@ static void tick_setup_device(struct tick_device *td,
 			else
 				tick_do_timer_cpu = TICK_DO_TIMER_NONE;
 			tick_next_period = ktime_get();
+#ifdef CONFIG_SCHED_NITRO_HZBOOST
+			tick_HZbaseperiod = ktime_set(0, NSEC_PER_SEC / HZ);
+			tick_change_periodmultiplicator(CONFIG_SCHED_NITRO_HZBOOST_PERMILLE);
+#else
 			tick_period = ktime_set(0, NSEC_PER_SEC / HZ);
+#endif
 		}
 
 		/*
@@ -415,3 +423,28 @@ void __init tick_init(void)
 {
 	tick_broadcast_init();
 }
+
+#ifdef CONFIG_SCHED_NITRO_HZBOOST_USERSPAC
+unsigned int sysctl_tick_period_HZscalepermille	= ((unsigned long)CONFIG_SCHED_NITRO_HZBOOST_PERMILLE);
+static unsigned int __last_HZscalepermille	= ((unsigned long)CONFIG_SCHED_NITRO_HZBOOST_PERMILLE);
+
+int tick_change_periodmultiplicator_handler(struct ctl_table *table, int write,
+					    void __user *buffer, size_t *lenp,
+					    loff_t *ppos)
+{
+	int ret = proc_dointvec_minmax(table, write, buffer, lenp, ppos);
+
+	if (ret || !write)
+		return ret;
+
+	if (sysctl_tick_period_HZscalepermille > 0)
+	  if (__last_HZscalepermille != sysctl_tick_period_HZscalepermille) {
+// 	    write_seqlock(&jiffies_lock);
+	    tick_change_periodmultiplicator(sysctl_tick_period_HZscalepermille);
+	    __last_HZscalepermille = sysctl_tick_period_HZscalepermille;
+// 	    write_sequnlock(&jiffies_lock);
+	  }
+
+	return 0;
+}
+#endif
