@@ -10,6 +10,7 @@ SCHED_FEAT(GENTLE_FAIR_SLEEPERS, true)
  * tasks
  */
 SCHED_FEAT(START_DEBIT, true)
+SCHED_FEAT(RESUME_DEBIT, false)
 
 /*
  * Prefer to schedule the task we woke last (assuming it failed
@@ -23,7 +24,7 @@ SCHED_FEAT(NEXT_BUDDY, false)
  * wake-preempt) as that likely will touch the same data, increases
  * cache locality.
  */
-SCHED_FEAT(LAST_BUDDY, true)
+SCHED_FEAT(LAST_BUDDY, false)
 
 /*
  * Consider buddies to be cache hot, decreases the likelyness of a
